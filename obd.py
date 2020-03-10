@@ -3,12 +3,43 @@
 # imports
 # import obd
 import board
+import time
+import digitalio
+import random
 from digitalio import DigitalInOut, Direction, Pull
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1306
 
+def retrieveOBD():
+    returnArray = []
+    returnArray.append(random.randint(1,1000)) # engine runtime
+    returnArray.append(random.randint(1,61)) # speed
+    returnArray.append(random.randint(1000,4000)) # rpm
+    returnArray.append(random.randint(185,195)) # temperature
+    returnArray.append(random.randint(14,35)) # boost
+    returnArray.append(random.randint(30,100)) # instant gas mileage
+    returnArray.append(random.randint(170,185)) # oil temp
+    return returnArray
+
+def displayOutput(mode, data):
+    if mode == 0:
+        firstLine = "VSS: " + str(data[0]) + " mph"
+        secondLine = "ESS: " + str(data[1]) + " RPM"
+        thirdLine = "ET " + str(data[2]) + " F"
+    elif mode == 1:
+        firstLine = "TB: " + str(data[3]) + " PSI"
+        secondLine = "IGM: " + str(data[4]) + " MPG"
+        thirdLine = "OT: " + str(data[5]) + " F"
+    draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
+    draw.text((0,0), firstLine, font=font, fill=255)
+    draw.text((0,18), secondLine, font=font, fill=255)
+    draw.text((0,36), thirdLine, font=font, fill=255)
+    oled.image(image)
+    oled.show()
+        
+
 # i2c interface and display
-i2c = busio.I2C(board.SCL, board.SDA)
+i2c = board.I2C()
 RESET_PIN = digitalio.DigitalInOut(board.D4)
 oled = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=0x3c, reset=RESET_PIN)
 
@@ -52,13 +83,17 @@ image = Image.new('1', (oled.width, oled.height))
 draw = ImageDraw.Draw(image)
 font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
 
+currentMode = 0
+maxMode = 1
+leftJoyletgo = True
+rightJoyletgo = True
+
 while True:
-    draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
-    firstLine = "Vehicle Speed: 0 mph"
-    secondLine = "Engine Speed: 900 RPM"
-    thirdLine = "Engine Temp: 190 F"
-    draw.text((0,0), firstLine, font=font, fill=255)
-    draw.text((0,18), secondLine, font=font, fill=255)
-    draw.text((0,36), thirdLine, font=font, fill=255)
+    if !leftJoy.value and leftJoyletgo:
+        currentMode = currentMode == 0 ? currentMode 
+        
+
+    displayOutput(0, retrieveOBD())
+
     time.sleep(1)
     
