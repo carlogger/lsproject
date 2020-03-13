@@ -3,7 +3,9 @@
 # imports
 # import obd
 import board
+import os
 import time
+from datetime import datetime
 import digitalio
 import random
 from digitalio import DigitalInOut, Direction, Pull
@@ -23,13 +25,17 @@ def retrieveOBD():
 
 def displayOutput(mode, data):
     if mode == 0:
-        firstLine = "VSS: " + str(data[0]) + " mph"
-        secondLine = "ESS: " + str(data[1]) + " RPM"
-        thirdLine = "ET " + str(data[2]) + " F"
+        firstLine = "VSS: " + str(data[1]) + " mph"
+        secondLine = "ESS: " + str(data[2]) + " RPM"
+        thirdLine = "ET " + str(data[3]) + " F"
     elif mode == 1:
-        firstLine = "TB: " + str(data[3]) + " PSI"
-        secondLine = "IGM: " + str(data[4]) + " MPG"
-        thirdLine = "OT: " + str(data[5]) + " F"
+        firstLine = "TB: " + str(data[4]) + " PSI"
+        secondLine = "IGM: " + str(data[5]) + " MPG"
+        thirdLine = "OT: " + str(data[6]) + " F"
+    elif mode == 2:
+        firstLine = str(currentCar)
+        secondLine = ""
+        thirdLine = ""
     draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
     draw.text((0,0), firstLine, font=font, fill=255)
     draw.text((0,18), secondLine, font=font, fill=255)
@@ -79,21 +85,69 @@ pressJoy.pull = Pull.UP
 oled.fill(0)
 oled.show()
 
+# create image and font
 image = Image.new('1', (oled.width, oled.height))
 draw = ImageDraw.Draw(image)
 font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
 
 currentMode = 0
-maxMode = 1
+currentCar = 1
+maxMode = 2
+allLogs = []
 leftJoyletgo = True
 rightJoyletgo = True
+metric = False
+secondsSinceEpoch = 0
+
 
 while True:
+    # if left joystick is pressed, change mode (decrease mode by 1)
     if !leftJoy.value and leftJoyletgo:
-        currentMode = currentMode == 0 ? currentMode 
-        
+        currentMode = currentMode == 0 ? maxmode : currentMode - 1
+        displayOutput(currentMode, allLogs[-1])
+        leftJoyletgo = False
 
-    displayOutput(0, retrieveOBD())
+    if leftJoy.value:
+        leftJoyletgo = True
 
-    time.sleep(1)
+    # if right joystick is pressed, change mode (increase mode by 1)
+    if !rightJoy.value and rightJoyletgo:
+        currentmode = currentMode == maxMode ? 0 : currentMode + 1
+        displayOutput(currentMode, allLogs[-1])
+        rightJoyletgo = False
+
+    if rightJoy.value:
+        rightJoyletgo = True
+
+    # every second (without using sleep), update the logs and display data
+    if secondsSinceEpoch != int(time.time()):
+        allLogs.append(retrieveOBD())
+        displayOutput(0, allLogs[-1])
+        secondsSinceEpoch = time.time()
+
+    # if left button is pressed, save logs, upload logs, and exit
+    if !leftButton.value:
+        draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
+        draw.text((0,0), "Saving logs ...", font=font, fill=255)
+
+        # if car directory doesn't exist, create it
+        if not os.path.exists(str(currentCar)):
+            os.makedirs(str(currentCar))
+
+        # write to file
+        with open(str(currentCar) + "/" + datetime.now().strftime("%Y%m%d%H%M%S.csv"), "w+") as my_csv:
+            csvWriter = csv.writer(my_csv,delimiter=',')
+            csvWriter = writerows(allLogs)
+            
+        draw.text((0,18), "Uploading logs ...", font=font, fill=255)
+        # upload via git
+        os.system("git add .")
+        os.system("git commit -m 'auto commit'")
+        os.system("git push origin master")
+        draw.text((0,36), "Shutting down ...", font=font, fill=255)
+        exit()
+
+    if !rightButton.value:
+        currentCar = currentCar == 9 ? 1 : currentCar + 1
+        displayOutput(currentMode, allLogs[-1]) 
     
