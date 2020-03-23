@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 import digitalio
 import random
+import csv
 from digitalio import DigitalInOut, Direction, Pull
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1306
@@ -96,14 +97,15 @@ maxMode = 2
 allLogs = []
 leftJoyletgo = True
 rightJoyletgo = True
+rightButtonletgo = True
 metric = False
 secondsSinceEpoch = 0
 
 
 while True:
     # if left joystick is pressed, change mode (decrease mode by 1)
-    if !leftJoy.value and leftJoyletgo:
-        currentMode = currentMode == 0 ? maxmode : currentMode - 1
+    if not leftJoy.value and leftJoyletgo:
+        currentMode = maxMode if currentMode == 0 else currentMode - 1
         displayOutput(currentMode, allLogs[-1])
         leftJoyletgo = False
 
@@ -111,8 +113,8 @@ while True:
         leftJoyletgo = True
 
     # if right joystick is pressed, change mode (increase mode by 1)
-    if !rightJoy.value and rightJoyletgo:
-        currentmode = currentMode == maxMode ? 0 : currentMode + 1
+    if not rightJoy.value and rightJoyletgo:
+        currentMode = 0 if currentMode == maxMode else currentMode + 1
         displayOutput(currentMode, allLogs[-1])
         rightJoyletgo = False
 
@@ -122,14 +124,21 @@ while True:
     # every second (without using sleep), update the logs and display data
     if secondsSinceEpoch != int(time.time()):
         allLogs.append(retrieveOBD())
-        displayOutput(0, allLogs[-1])
-        secondsSinceEpoch = time.time()
+        displayOutput(currentMode, allLogs[-1])
+        secondsSinceEpoch = int(time.time())
 
     # if left button is pressed, save logs, upload logs, and exit
-    if !leftButton.value:
+    if not leftButton.value:
         draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
         draw.text((0,0), "Saving logs ...", font=font, fill=255)
+        oled.image(image)
+        oled.show()
 
+        if not os.path.exists("../logs"):
+            os.makedirs("../logs")
+
+        os.chdir("../logs")
+        
         # if car directory doesn't exist, create it
         if not os.path.exists(str(currentCar)):
             os.makedirs(str(currentCar))
@@ -137,17 +146,24 @@ while True:
         # write to file
         with open(str(currentCar) + "/" + datetime.now().strftime("%Y%m%d%H%M%S.csv"), "w+") as my_csv:
             csvWriter = csv.writer(my_csv,delimiter=',')
-            csvWriter = writerows(allLogs)
+            csvWriter.writerows(allLogs)
             
         draw.text((0,18), "Uploading logs ...", font=font, fill=255)
+        oled.image(image)
+        oled.show()
         # upload via git
         os.system("git add .")
         os.system("git commit -m 'auto commit'")
         os.system("git push origin master")
         draw.text((0,36), "Shutting down ...", font=font, fill=255)
+        oled.image(image)
+        oled.show()
         exit()
 
-    if !rightButton.value:
-        currentCar = currentCar == 9 ? 1 : currentCar + 1
-        displayOutput(currentMode, allLogs[-1]) 
-    
+    if not rightButton.value and rightButtonletgo:
+        currentCar = 1 if currentCar == 9 else currentCar + 1
+        displayOutput(currentMode, allLogs[-1])
+        rightButtonletgo = False
+
+    if rightButton.value:
+        rightButtonletgo = True
