@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # imports
-# import obd
+import obd
+from obd import OBDStatus
 import board
 import os
 import time
@@ -13,26 +14,29 @@ from digitalio import DigitalInOut, Direction, Pull
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1306
 
+def retrieveData(pid):
+    return connection.query(obd.commands[pid]).value
+
 def retrieveOBD():
     returnArray = []
-    returnArray.append(random.randint(1,1000)) # engine runtime
-    returnArray.append(random.randint(1,61)) # speed
-    returnArray.append(random.randint(1000,4000)) # rpm
-    returnArray.append(random.randint(185,195)) # temperature
-    returnArray.append(random.randint(14,35)) # boost
-    returnArray.append(random.randint(30,100)) # instant gas mileage
-    returnArray.append(random.randint(170,185)) # oil temp
+    returnArray.append(retrieveData("RUN_TIME")) # engine runtime
+    returnArray.append(retrieveData("SPEED")) # speed
+    returnArray.append(retrieveData("RPM")) # rpm
+    returnArray.append(retrieveData("COOLANT_TEMP")) # temperature
+    returnArray.append(retrieveData("MAF")) # mass air flow
+    returnArray.append(retrieveData("ENGINE_LOAD")) # engine load
+    returnArray.append(retrieveData("OIL_TEMP")) # oil temp
     return returnArray
 
 def displayOutput(mode, data):
     if mode == 0:
-        firstLine = "VSS: " + str(data[1]) + " mph"
+        firstLine = "VSS: " + str(data[1].to("mph")) + " mph"
         secondLine = "ESS: " + str(data[2]) + " RPM"
-        thirdLine = "ET " + str(data[3]) + " F"
+        thirdLine = "ET " + str(data[3].to("fahrenheit")) + " F"
     elif mode == 1:
-        firstLine = "TB: " + str(data[4]) + " PSI"
-        secondLine = "IGM: " + str(data[5]) + " MPG"
-        thirdLine = "OT: " + str(data[6]) + " F"
+        firstLine = "EL: " + str(data[5]) + "%"
+        secondLine = "MAF: " + str(data[4]) + " g/s"
+        thirdLine = "OT: " + str(data[6].to("fahrenheit")) + " F"
     elif mode == 2:
         firstLine = str(currentCar)
         secondLine = ""
@@ -80,7 +84,7 @@ pressJoy.direction = Direction.INPUT
 pressJoy.pull = Pull.UP
 
 # enable connection to OBD-II
-# connection = obd.OBD();
+connection = obd.OBD();
 
 # Clear display
 oled.fill(0)
@@ -123,6 +127,12 @@ while True:
 
     # every second (without using sleep), update the logs and display data
     if secondsSinceEpoch != int(time.time()):
+        while connection.status() != OBDStatus.CAR_CONNECTED:
+            draw.rectangle((0,0, oled.width, oled.height * 2), outline=0, fill=0)
+            draw.text((0,0), "Waiting for", font=font, fill=255)
+            draw.text((0,18), "connection.", font=font, fill=255)
+            oled.image(image)
+            oled.show()
         allLogs.append(retrieveOBD())
         displayOutput(currentMode, allLogs[-1])
         secondsSinceEpoch = int(time.time())
@@ -134,10 +144,10 @@ while True:
         oled.image(image)
         oled.show()
 
-        if not os.path.exists("../logs"):
-            os.makedirs("../logs")
+        if not os.path.exists("/home/pi/logs"):
+            os.makedirs("/home/pi/logs")
 
-        os.chdir("../logs")
+        os.chdir("/home/pi/logs")
         
         # if car directory doesn't exist, create it
         if not os.path.exists(str(currentCar)):
