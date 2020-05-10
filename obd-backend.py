@@ -33,15 +33,15 @@ def displayOutput(mode, data):
     if mode == 0:
         firstLine = "VSS: " + str(math.floor(data[1])) + " mph"
         secondLine = "ESS: " + str(math.floor(data[2])) + " RPM"
-        thirdLine = "ET " + str(math.floor(data[3])) + " F"
+        thirdLine = "CT: " + str(math.floor(data[3])) + " F"
     elif mode == 1:
         firstLine = "EL: " + str(math.floor(data[5])) + "%"
         secondLine = "MAF: " + str(math.floor(data[4])) + " g/s"
-        thirdLine = "OT: " + str(math.floor(data[6])) + " F"
+        thirdLine = "IT: " + str(math.floor(data[6])) + " F"
     elif mode == 2:
-        firstLine = str(currentCar)
-        secondLine = ""
-        thirdLine = ""
+        firstLine = "Car " + str(currentCar)
+        secondLine = "Uptime:"
+        thirdLine = str(data[0]) + " s"
     draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
     draw.text((0,0), firstLine, font=font, fill=255)
     draw.text((0,18), secondLine, font=font, fill=255)
@@ -84,9 +84,23 @@ pressJoy = DigitalInOut(board.D4)
 pressJoy.direction = Direction.INPUT
 pressJoy.pull = Pull.UP
 
+# create image and font
+image = Image.new('1', (oled.width, oled.height))
+draw = ImageDraw.Draw(image)
+font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
+
+# startup screen
+oled.fill(0)
+draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
+draw.text((0,0), "Starting up", font=font, fill=255)
+draw.text((0,18), "Program...", font=font, fill=255)
+draw.text((0,36), thirdLine, font=font, fill=255)
+oled.image(image)
+oled.show()
+
 # enable connection to OBD-II, continue trying to connect if connection isn't established
 while True:
-    connection = obd.Async()
+    connection = obd.Async(fast=False, timeout=30)
     if connection.status() == OBDStatus.CAR_CONNECTED:
         break
 
@@ -99,15 +113,8 @@ connection.watch(obd.commands["ENGINE_LOAD"])
 connection.watch(obd.commands["INTAKE_TEMP"])
 
 connection.start()
-
-# Clear display
-oled.fill(0)
-oled.show()
-
-# create image and font
-image = Image.new('1', (oled.width, oled.height))
-draw = ImageDraw.Draw(image)
-font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 16)
+# approximately 2 seconds needed to stabilize connection
+time.sleep(2)
 
 currentMode = 0
 currentCar = 1
@@ -184,6 +191,7 @@ while True:
         oled.image(image)
         oled.show()
         connection.stop()
+        os.system("/sbin/shutdown now")
         exit()
 
     if not rightButton.value and rightButtonletgo:
