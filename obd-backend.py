@@ -15,9 +15,11 @@ from digitalio import DigitalInOut, Direction, Pull
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1306
 
+# this function is called to receive data from a certain PID
 def retrieveData(pid):
     return connection.query(obd.commands[pid]).value
 
+# this function returns an array of data from several PIDs
 def retrieveOBD():
     returnArray = []
     returnArray.append(secondsSinceEpoch - startingTime) # program runtime (you could use runtime PID, but it's not supported on my vehicle)
@@ -29,6 +31,7 @@ def retrieveOBD():
     returnArray.append(retrieveData("INTAKE_TEMP").to("fahrenheit").magnitude) # intake air temperature
     return returnArray
 
+# this function will display data to the oled screen, it takes mode and data as input parameters
 def displayOutput(mode, data):
     if mode == 0:
         firstLine = "VSS: " + str(math.floor(data[1])) + " mph"
@@ -94,15 +97,39 @@ oled.fill(0)
 draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
 draw.text((0,0), "Starting up", font=font, fill=255)
 draw.text((0,18), "Program...", font=font, fill=255)
-draw.text((0,36), thirdLine, font=font, fill=255)
 oled.image(image)
 oled.show()
 
+# this code is deprecated. It works, but connection is intermitent.
 # enable connection to OBD-II, continue trying to connect if connection isn't established
+#tryAgain = True
+#while tryAgain:
+#    try:
+#        connection = obd.Async(fast=False, timeout=30)
+#        tryAgain = False
+#    except:
+#        time.sleep(1) # if connection couldn't be established, wait a second
+
+#while True:
+#    if connection.status() == OBDStatus.CAR_CONNECTED:
+#        break
+
+# connect to ELM327 OBD-II interface chip
 while True:
-    connection = obd.Async(fast=False, timeout=30)
-    if connection.status() == OBDStatus.CAR_CONNECTED:
-        break
+    try:
+        connection = obd.Async(fast=False,timeout=30)
+        if connection.status() == OBDStatus.CAR_CONNECTED:
+            break
+    except:
+        # this code runs if the connection fails in some way
+        print("Connection failed. Trying again ...") # this is for the log file
+        # this is the screen output
+        draw.rectangle((0, 0, oled.width, oled.height * 2), outline=0, fill=0)
+        draw.text((0,0), "Connection", font=font, fill=255)
+        draw.text((0,18), "failed. Trying", font=font, fill=255)
+        draw.text((0,36), "again ...", font=font, fill=255)
+        oled.image(image)
+        oled.show()
 
 # connection data to track
 connection.watch(obd.commands["SPEED"])
@@ -112,10 +139,12 @@ connection.watch(obd.commands["MAF"])
 connection.watch(obd.commands["ENGINE_LOAD"])
 connection.watch(obd.commands["INTAKE_TEMP"])
 
+# start connection of interface chip with vehicle
 connection.start()
 # approximately 2 seconds needed to stabilize connection
 time.sleep(2)
 
+# various variables
 currentMode = 0
 currentCar = 1
 maxMode = 2
