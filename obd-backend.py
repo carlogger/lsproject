@@ -153,7 +153,8 @@ leftJoyletgo = True
 rightJoyletgo = True
 rightButtonletgo = True
 metric = False
-startingTime = int(time.time())
+# note: time.time() does work as well, but can result in large skips if the system clock is changed on startup
+startingTime = int(time.monotonic())
 secondsSinceEpoch = 0
 
 
@@ -177,14 +178,14 @@ while True:
         rightJoyletgo = True
 
     # every second (without using sleep), update the logs and display data
-    if secondsSinceEpoch != int(time.time()):
+    if secondsSinceEpoch != int(time.monotonic()):
         while connection.status() != OBDStatus.CAR_CONNECTED:
             draw.rectangle((0,0, oled.width, oled.height * 2), outline=0, fill=0)
             draw.text((0,0), "Waiting for", font=font, fill=255)
             draw.text((0,18), "connection.", font=font, fill=255)
             oled.image(image)
             oled.show()
-        secondsSinceEpoch = int(time.time())
+        secondsSinceEpoch = int(time.monotonic())
         allLogs.append(retrieveOBD())
         displayOutput(currentMode, allLogs[-1])
 

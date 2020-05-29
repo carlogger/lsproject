@@ -29,6 +29,7 @@ footer = """
 for i in range(1,10):
     content += "<h2>Car " + str(i) + "</h2>"
     plotLists = listdir_nohidden("carlogger.github.io/" + str(i))
+    plotLists = sorted(plotLists)
     for plot in plotLists:
         date = plot[0:4] + "-" + plot[4:6] + "-" + plot[6:8] + " " + plot[8:10] + ":" + plot[10:12]
         content += "<a href='"
