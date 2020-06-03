@@ -36,7 +36,7 @@ plot logFile u 1:6 w l
 set title "Instant Gas Mileage"; set xlabel "time (s)"; set ylabel "mileage (mpg)"
 unset key
 set yrange [0:110]
-plot logFile u 1:($6 == 0 ? 110 : $5 == 0 ? NaN : 13 * $2 / $5) w l
+plot logFile u 1:($6 == 0 ? 110 : $5 == 0 ? NaN : scalar * $2 / $5) w l
 
 reset
 unset multiplot

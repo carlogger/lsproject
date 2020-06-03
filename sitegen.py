@@ -10,13 +10,19 @@ def listdir_nohidden(path):
             yield f
 
 header = """
+<!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Car Data Archives</title>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Orbitron:400,700" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
+<div id="banner">
 <h1>Car Data Archives</h1>
-<hr />
+</div>
 """
 
 content = ""
@@ -26,8 +32,20 @@ footer = """
 </html>
 """
 
+cars = [
+    "2006 VW Jetta TDI",
+    "Car 2",
+    "Car 3",
+    "Car 4",
+    "Car 5",
+    "Car 6",
+    "Car 7",
+    "Car 8",
+    "Car 9"
+    ]
+
 for i in range(1,10):
-    content += "<h2>Car " + str(i) + "</h2>"
+    content += "<h2>" + cars[i-1] + "</h2>"
     plotLists = listdir_nohidden("carlogger.github.io/" + str(i))
     plotLists = sorted(plotLists)
     for plot in plotLists:

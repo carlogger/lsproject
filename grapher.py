@@ -11,6 +11,19 @@ def listdir_nohidden(path):
 logDir = "logs/"
 plotDir = "carlogger.github.io/"
 
+# 13.0 represents diesel, 11.44 represents gasoline
+igsScalars = [
+    13.00,
+    11.44,
+    11.44,
+    11.44,
+    11.44,
+    11.44,
+    11.44,
+    11.44,
+    11.44
+    ]
+
 os.chdir(logDir)
 os.system("git pull")
 os.chdir("..")
@@ -36,4 +49,4 @@ for i in range(1,10):
         date = data[0:4] + "-" + data[4:6] + "-" + data[6:8] + " " + data[8:10] + ":" + data[10:12]
         logFile = logDir + str(i) + "/" + data + "csv"
         plotFile = plotDir + str(i) + "/" + data + "pdf"
-        os.system(""" gnuplot -e "logFile='%s';plotFile='%s';date='%s'" plotscript.plg """ % (logFile, plotFile, date))
+        os.system(""" gnuplot -e "logFile='%s';plotFile='%s';date='%s';scalar=%f" plotscript.plg """ % (logFile, plotFile, date, igsScalars[i-1]))
